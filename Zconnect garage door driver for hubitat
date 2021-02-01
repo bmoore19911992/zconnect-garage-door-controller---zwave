@@ -1,0 +1,50 @@
+    onOffCmd(0, channelNumber(dni))
+    
+}
+
+private onOffCmd(value, endpoint) {
+    logDebug "onOffCmd, value: $value, endpoint: $endpoint"
+    
+    def cmds = []
+    cmds << encap(zwave.basicV1.basicSet(value: value), endpoint)
+    cmds << encap(zwave.basicV1.basicGet(), endpoint)
+    
+    return delayBetween(cmds, 1000)
+}
+
+private channelNumber(String dni) {
+    def ch = dni.split("-")[-1] as Integer
+    return ch
+}
+
+private void createChildDevices() {
+    logDebug "createChildDevices"
+    
+    for (i in 1) {
+        addChildDevice("hubitat", "Binary Switch Child Device", "$device.deviceNetworkId-$i", [name: "ch$i", label: "$device.displayName $i", isComponent: true])
+    }
+    for (i in 2..3) {
+        addChildDevice("erocm123", "Contact Sensor Child Device", "$device.deviceNetworkId-$i", [name: "ch$i", label: "$device.displayName $i", isComponent: true])
+    }
+}
+
+
+
+	private encap(cmd, endpoint) {
+	    if (endpoint) {
+	        zwave.multiChannelV3.multiChannelCmdEncap(destinationEndPoint:endpoint).encapsulate(cmd).format()
+	    } else {
+	        cmd.format()
+	    }
+	}
+
+def logsOff(){
+log.warn "debug logging disabled..."
+device.updateSetting("debugOutput",[value:"false",type:"bool"])
+}
+
+private logDebug(msg) {
+if (settings?.debugOutput || settings?.debugOutput == null) {
+log.debug "$msg"
+}
+}
